@@ -2,8 +2,8 @@
 
 import { Direction } from "../shared/enums.js";
 
-export function buildTrade({ direction, entryPrice, zoneWidth, takeProfitRR, stopLossATR }) {
-  const risk = zoneWidth * stopLossATR;
+export function buildTrade({ direction, entryPrice, atr, takeProfitRR, stopLossATR }) {
+  const risk = atr * stopLossATR;
   if (direction === Direction.LONG) {
     return {
       entryPrice,

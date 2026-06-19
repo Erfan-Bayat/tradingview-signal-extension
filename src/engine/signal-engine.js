@@ -45,7 +45,7 @@ export function createSignalEngine(config) {
       trade = buildTrade({
         direction,
         entryPrice: price,
-        zoneWidth: Math.max(zone.width, 0.0000001),
+        atr: Math.max(atr ?? 0, 0.0000001),
         takeProfitRR: config.takeProfitRR,
         stopLossATR: config.stopLossATR
       });

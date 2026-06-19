@@ -13,7 +13,7 @@ export const STORAGE_KEYS = Object.freeze({
 export const DEFAULT_SIGNAL_CONFIG = Object.freeze({
   angleDeg: 0,
   anchorIndex: 0,
-  anchorPrice: 0,
+  anchorPrice: 1,
   direction: Direction.AUTO,
   atrPeriod: 14,
   atrMultiplier: 1.0,

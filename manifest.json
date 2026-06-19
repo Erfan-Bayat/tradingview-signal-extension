@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "action": {
     "default_title": "Signal Monitor",
-    "default_popup": "popup/popup.html"
+    "default_popup": "src/popup/popup.html"
   },
   "background": {
     "service_worker": "src/background/service-worker.js",

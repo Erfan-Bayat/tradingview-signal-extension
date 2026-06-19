@@ -1,6 +1,6 @@
 // popup/popup.js
-import { MessageType, Direction, EntryMode } from "../src/shared/enums.js";
-import { DEFAULT_SIGNAL_CONFIG } from "../src/shared/constants.js";
+import { MessageType, Direction, EntryMode } from "../shared/enums.js";
+import { DEFAULT_SIGNAL_CONFIG } from "../shared/constants.js";
 
 const $ = (id) => document.getElementById(id);
 
