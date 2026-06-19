@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  width: 360px;
+}
+main {
+  padding: 10px;
+}
+section {
+  margin-bottom: 10px;
+}
+label {
+  display: block;
+  margin-bottom: 6px;
+}
+input, select {
+  width: 100%;
+  box-sizing: border-box;
+}
+button {
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+#logs {
+  max-height: 140px;
+  overflow: auto;
+  background: #f6f6f6;
+  padding: 8px;
+  white-space: pre-wrap;
+}

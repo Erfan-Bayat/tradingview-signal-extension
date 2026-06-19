@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signal Monitor</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Signal Monitor</h1>
+
+      <section>
+        <p>Status: <strong id="statusText">Idle</strong></p>
+        <p>Platform: <span id="platform">-</span></p>
+        <p>Symbol: <span id="symbol">-</span></p>
+        <p>Timeframe: <span id="timeframe">-</span></p>
+        <p>Engine: <span id="engineState">-</span></p>
+        <p>Last Price: <span id="lastPrice">-</span></p>
+      </section>
+
+      <section>
+        <label>angleDeg <input id="angleDeg" type="number" step="0.1" /></label>
+        <label>anchorIndex <input id="anchorIndex" type="number" step="1" /></label>
+        <label>anchorPrice <input id="anchorPrice" type="number" step="0.0001" /></label>
+
+        <label>direction
+          <select id="direction">
+            <option value="AUTO">AUTO</option>
+            <option value="LONG">LONG</option>
+            <option value="SHORT">SHORT</option>
+          </select>
+        </label>
+
+        <label>atrPeriod <input id="atrPeriod" type="number" step="1" /></label>
+        <label>atrMultiplier <input id="atrMultiplier" type="number" step="0.1" /></label>
+
+        <label>entryMode
+          <select id="entryMode">
+            <option value="BREAKOUT_RETEST">BREAKOUT_RETEST</option>
+            <option value="BREAKOUT_ONLY">BREAKOUT_ONLY</option>
+          </select>
+        </label>
+
+        <label>takeProfitRR <input id="takeProfitRR" type="number" step="0.1" /></label>
+        <label>stopLossATR <input id="stopLossATR" type="number" step="0.1" /></label>
+      </section>
+
+      <section>
+        <button id="saveBtn" type="button">Save Config</button>
+        <button id="startBtn" type="button">Start</button>
+        <button id="stopBtn" type="button">Stop</button>
+        <button id="refreshBtn" type="button">Refresh</button>
+        <button id="exportBtn" type="button">Export CSV</button>
+      </section>
+
+      <section>
+        <pre id="logs"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>
