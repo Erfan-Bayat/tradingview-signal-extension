@@ -5,11 +5,10 @@
   "version": "0.1.0",
   "action": {
     "default_title": "Signal Monitor",
-    "default_popup": "src/popup/popup.html"
+    "default_popup": "dist/popup/popup.html"
   },
   "background": {
-    "service_worker": "src/background/service-worker.js",
-    "type": "module"
+    "service_worker": "dist/background/service-worker.js"
   },
   "permissions": [
     "storage",
@@ -18,12 +17,17 @@
     "activeTab"
   ],
   "host_permissions": [
+    "*://hivaex.ir/*",
+    "*://*.hivaex.ir/*",
     "<all_urls>"
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/content-entry.js"],
+      "matches": [
+        "*://hivaex.ir/*",
+        "*://*.hivaex.ir/*"
+      ],
+      "js": ["dist/content/content-entry.js"],
       "run_at": "document_idle",
       "all_frames": true
     }
