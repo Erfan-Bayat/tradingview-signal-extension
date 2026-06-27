@@ -5,17 +5,17 @@ import { logger } from "../shared/logger.js";
 import { detectTradingViewPresence } from "./tv-detector.js";
 import { selectAdapter } from "../adapters/adapter-registry.js";
 import { createContextReconciler } from "./context-reconciler.js";
-import { createPriceStream } from "./price-stream.js";
-import { createCandleStream } from "./candle-stream.js";
+import { createHivaexStreams } from "./hivaex-stream.js";
+import { createBrokerBridge } from "./broker-bridge.js";
 
 let activeAdapter = null;
-let priceStream = null;
-let candleStream = null;
 let streamActive = false;
 let lastContextPublishTs = 0;
 const MIN_CONTEXT_INTERVAL_MS = 1000;
 
 const reconciler = createContextReconciler({ minIntervalMs: 1200 });
+const configStore = { value: null };
+let brokerBridge = null;
 
 function withLastError(contextLabel) {
   if (chrome.runtime.lastError) {
@@ -27,7 +27,10 @@ function withLastError(contextLabel) {
 
 function sendToBackground(message, callback = () => {}) {
   chrome.runtime.sendMessage(message, (response) => {
-    if (withLastError(`runtime.sendMessage(${message.type})`)) return callback(null);
+    if (withLastError(`runtime.sendMessage(${message.type})`)) {
+      console.error("[content-entry] send failed", message.type, chrome.runtime.lastError?.message);
+      return callback(null);
+    }
     callback(response ?? null);
   });
 }
@@ -57,90 +60,99 @@ function getCurrentContext() {
 
 function publishContext(force = false) {
   const now = Date.now();
-  const c = getCurrentContext();
-  const next = {
-    symbol: c.symbol,
-    timeframe: c.timeframe,
-    platformName: c.platformName
-  };
+  const ctx = getCurrentContext();
+  const next = { symbol: ctx.symbol, timeframe: ctx.timeframe, platformName: ctx.platformName };
+  if (!force && now - lastContextPublishTs < MIN_CONTEXT_INTERVAL_MS) return ctx;
+  if (!force && !reconciler.shouldEmit(next)) return ctx;
 
-  if (!force && now - lastContextPublishTs < MIN_CONTEXT_INTERVAL_MS) return c;
-  if (!force && !reconciler.shouldEmit(next)) return c;
-
-  sendToBackground({
-    type: MessageType.PLATFORM_INFO,
-    payload: {
-      platformName: c.platformName,
-      platformSource: c.platformSource,
-      adapterId: c.adapter.constructor.id,
-      pageUrl: window.location.href
-    }
-  });
-
-  sendToBackground({
-    type: MessageType.SYMBOL_TIMEFRAME,
-    payload: {
-      symbol: c.symbol,
-      timeframe: c.timeframe,
-      symbolSource: c.symbolSource,
-      timeframeSource: c.timeframeSource,
-      adapterId: c.adapter.constructor.id
-    }
-  });
-
+  sendToBackground({ type: MessageType.PLATFORM_INFO, payload: { platformName: ctx.platformName, platformSource: ctx.platformSource, adapterId: ctx.adapter?.constructor?.id ?? null, pageUrl: window.location.href } });
+  sendToBackground({ type: MessageType.SYMBOL_TIMEFRAME, payload: { symbol: ctx.symbol, timeframe: ctx.timeframe, symbolSource: ctx.symbolSource, timeframeSource: ctx.timeframeSource, adapterId: ctx.adapter?.constructor?.id ?? null } });
   reconciler.commit(next);
   lastContextPublishTs = now;
-  return c;
+  return ctx;
 }
 
+function initBroker() {
+  const adapter = ensureAdapter();
+  if (adapter && adapter.id === "hivaex") brokerBridge = createBrokerBridge(adapter);
+}
 
 function startStream() {
   if (streamActive) return;
   streamActive = true;
-
   const adapter = ensureAdapter();
-  priceStream = createPriceStream({ adapter, intervalMs: 1000 });
-  candleStream = createCandleStream({ adapter, intervalMs: 2000 });
+  publishContext(true);
 
-  priceStream.start(({ price, ts }) => {
-    const c = publishContext(false);
-    sendToBackground({
-      type: MessageType.PRICE_UPDATE,
-      payload: {
-        price,
-        symbol: c.symbol,
-        timeframe: c.timeframe,
-        adapterId: adapter.constructor.id,
-        ts
+  if (adapter?.id === "hivaex") {
+    const hivaex = createHivaexStreams({ adapter });
+    hivaex.start({
+      onPrice(price) {
+        const ctx = publishContext(false);
+        sendToBackground({ type: MessageType.PRICE_UPDATE, payload: { price, symbol: ctx.symbol, timeframe: ctx.timeframe, adapterId: adapter.id, ts: Date.now() } });
+      },
+      onCandle(candle) {
+        const ctx = publishContext(false);
+        sendToBackground({ type: MessageType.CANDLE_UPDATE, payload: { ...candle, symbol: ctx.symbol, timeframe: ctx.timeframe, adapterId: adapter.id } });
+      },
+      onLoginChange(loggedIn) {
+        sendToBackground({ type: MessageType.BROKER_STATUS, payload: { loggedIn, adapterId: adapter.id } });
+      },
+      onError(error) {
+        sendToBackground({ type: MessageType.STREAM_ERROR, payload: { message: String(error?.message ?? error) } });
       }
     });
-  });
-
-  candleStream.start((candle) => {
-    const c = publishContext(false);
-    sendToBackground({
-      type: MessageType.CANDLE_UPDATE,
-      payload: {
-        ...candle,
-        symbol: c.symbol,
-        timeframe: c.timeframe,
-        adapterId: adapter.constructor.id
-      }
-    });
-  });
+  }
 }
 
 function stopStream() {
   streamActive = false;
-  priceStream?.stop();
-  candleStream?.stop();
-  priceStream = null;
-  candleStream = null;
+  brokerBridge = null;
 }
 
 function teardownAdapter() {
   if (activeAdapter) activeAdapter.destroy();
   activeAdapter = null;
+}
+
+function publishRetry(timeoutMs = 250) {
+  setTimeout(() => { try { publishContext(true); } catch {} }, timeoutMs);
+}
+
+function handlePlaceOrder(payload = {}, sendResponse) {
+  try {
+    if (!brokerBridge) {
+      sendResponse({ ok: false, error: "BROKER_NOT_INITIALIZED" });
+      return;
+    }
+    sendResponse({ ok: true, result: brokerBridge.placeOrder(payload) });
+  } catch (err) {
+    sendResponse({ ok: false, error: String(err?.message ?? err) });
+  }
+}
+
+function handleSetTPSL(payload = {}, sendResponse) {
+  try {
+    if (!brokerBridge) {
+      sendResponse({ ok: false, error: "BROKER_NOT_INITIALIZED" });
+      return;
+    }
+    sendResponse({ ok: true, result: brokerBridge.setTPSL(payload) });
+  } catch (err) {
+    sendResponse({ ok: false, error: String(err?.message ?? err) });
+  }
+}
+
+function handleGetBrokerStatus(sendResponse) {
+  try {
+    if (!brokerBridge) {
+      sendResponse({ ok: true, loggedIn: false, reason: "BROKER_NOT_READY" });
+      return;
+    }
+    const status = brokerBridge.getStatus();
+    sendResponse({ ok: true, ...status });
+  } catch (err) {
+    sendResponse({ ok: false, error: String(err?.message ?? err) });
+  }
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -157,7 +169,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return true;
     case MessageType.START_STREAM:
       publishContext(true);
+      initBroker();
       startStream();
+      publishRetry(250);
+      publishRetry(900);
       sendResponse({ ok: true });
       return true;
     case MessageType.STOP_STREAM:
@@ -165,16 +180,41 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       teardownAdapter();
       sendResponse({ ok: true });
       return true;
+    case MessageType.PLACE_ORDER:
+      handlePlaceOrder(message?.payload ?? {}, sendResponse);
+      return true;
+    case MessageType.SET_TPSL:
+      handleSetTPSL(message?.payload ?? {}, sendResponse);
+      return true;
+    case MessageType.GET_BROKER_STATUS:
+      handleGetBrokerStatus(sendResponse);
+      return true;
     default:
       return false;
   }
 });
 
 (() => {
+  loadPersistedConfig();
+  logger.info("content-entry", `Loaded on ${window.location.hostname}`);
+  const adapter = ensureAdapter();
+  logger.info("content-entry", `Selected adapter: ${adapter?.constructor?.id ?? "unknown"}`);
   const detection = detectTradingViewPresence(document);
   if (detection.detected) {
-    ensureAdapter();
     sendToBackground({ type: MessageType.CHART_DETECTED, payload: detection });
     publishContext(true);
+    publishRetry(250);
+    publishRetry(900);
   }
 })();
+
+function loadPersistedConfig() {
+  try {
+    chrome.storage.local.get(["signalConfig"], (result) => {
+      if (chrome.runtime.lastError) return;
+      configStore.value = result?.signalConfig ?? null;
+    });
+  } catch {
+    configStore.value = null;
+  }
+}

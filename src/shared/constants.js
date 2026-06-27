@@ -19,7 +19,10 @@ export const DEFAULT_SIGNAL_CONFIG = Object.freeze({
   atrMultiplier: 1.0,
   entryMode: EntryMode.BREAKOUT_RETEST,
   takeProfitRR: 2,
-  stopLossATR: 1
+  stopLossATR: 1,
+  autoExecute: false,
+  lotSize: 1,
+  confirmBeforeTrade: true
 });
 
 export const DEFAULT_SESSION_STATE = Object.freeze({

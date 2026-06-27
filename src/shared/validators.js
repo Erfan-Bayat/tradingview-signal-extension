@@ -33,6 +33,9 @@ export function validateSignalConfig(input = {}) {
   if (!isValidEntryMode(merged.entryMode)) errors.push("entryMode is invalid");
   if (!isFiniteNumber(merged.takeProfitRR) || merged.takeProfitRR <= 0) errors.push("takeProfitRR must be > 0");
   if (!isFiniteNumber(merged.stopLossATR) || merged.stopLossATR <= 0) errors.push("stopLossATR must be > 0");
+  if (typeof merged.autoExecute !== "boolean") errors.push("autoExecute must be boolean");
+  if (!isFiniteNumber(merged.lotSize) || merged.lotSize <= 0) errors.push("lotSize must be > 0");
+  if (typeof merged.confirmBeforeTrade !== "boolean") errors.push("confirmBeforeTrade must be boolean");
 
   return {
     valid: errors.length === 0,

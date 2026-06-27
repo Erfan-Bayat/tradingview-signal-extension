@@ -3,12 +3,14 @@
 import { TradingViewDirectAdapter } from "./tradingview-direct-adapter.js";
 import { EmbeddedTradingViewAdapter } from "./embedded-tradingview-adapter.js";
 import { GenericWidgetAdapter } from "./generic-widget-adapter.js";
+import { HivaexAdapter } from "./hivaex-adapter.js";
 import { FallbackDomAdapter } from "./fallback-dom-adapter.js";
 
 const ADAPTERS = [
   TradingViewDirectAdapter,
   EmbeddedTradingViewAdapter,
   GenericWidgetAdapter,
+  HivaexAdapter,
   FallbackDomAdapter
 ];
 

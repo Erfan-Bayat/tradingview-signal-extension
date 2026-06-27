@@ -61,3 +61,8 @@ export async function appendTradeLog(entry) {
 export async function setLastContext(context) {
   await storageSet({ [STORAGE_KEYS.LAST_CONTEXT]: context });
 }
+
+export async function getLastContext() {
+  const data = await storageGet([STORAGE_KEYS.LAST_CONTEXT]);
+  return data[STORAGE_KEYS.LAST_CONTEXT] ?? null;
+}

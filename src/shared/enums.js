@@ -9,6 +9,12 @@ export const MessageType = Object.freeze({
   EXPORT_CSV: "EXPORT_CSV",
   GET_LOGS: "GET_LOGS",
 
+  // Broker
+  PLACE_ORDER: "PLACE_ORDER",
+  SET_TPSL: "SET_TPSL",
+  GET_BROKER_STATUS: "GET_BROKER_STATUS",
+  BROKER_STATUS: "BROKER_STATUS",
+
   // Background -> Content
   PROBE_CHART: "PROBE_CHART",
   START_STREAM: "START_STREAM",

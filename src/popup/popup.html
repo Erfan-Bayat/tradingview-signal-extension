@@ -1,68 +1,83 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self';"
-    />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Signal Monitor</title>
-    <link rel="stylesheet" href="./popup.css" />
-  </head>
-  <body>
-    <main>
-      <h1>Signal Monitor</h1>
+<head>
+  <meta charset="UTF-8" />
+  <title>Signal Monitor</title>
+  <link rel="stylesheet" href="./popup.css" />
+</head>
+<body>
+  <main>
+    <h1>Signal Monitor</h1>
 
-      <section>
-        <p>Status: <strong id="statusText">Idle</strong></p>
-        <p>Platform: <span id="platform">-</span></p>
-        <p>Symbol: <span id="symbol">-</span></p>
-        <p>Timeframe: <span id="timeframe">-</span></p>
-        <p>Engine: <span id="engineState">-</span></p>
-        <p>Last Price: <span id="lastPrice">-</span></p>
-      </section>
+    <section>
+      <p>Status: <strong id="statusText">Idle</strong></p>
+      <p>Platform: <span id="platform">-</span></p>
+      <p>Symbol: <span id="symbol">-</span></p>
+      <p>Timeframe: <span id="timeframe">-</span></p>
+      <p>Engine: <span id="engineState">-</span></p>
+      <p>Broker: <span id="brokerStatus">-</span></p>
+      <p>Last Price: <span id="lastPrice">-</span></p>
+    </section>
 
-      <section>
-        <label>angleDeg <input id="angleDeg" type="number" step="0.1" /></label>
-        <label>anchorIndex <input id="anchorIndex" type="number" step="1" /></label>
-        <label>anchorPrice <input id="anchorPrice" type="number" step="0.0001" /></label>
+    <section>
+      <label>angleDeg <input id="angleDeg" type="number" step="0.1" /></label>
+      <label>anchorIndex <input id="anchorIndex" type="number" step="1" /></label>
+      <label>anchorPrice <input id="anchorPrice" type="number" step="0.0001" /></label>
 
-        <label>direction
-          <select id="direction">
-            <option value="AUTO">AUTO</option>
-            <option value="LONG">LONG</option>
-            <option value="SHORT">SHORT</option>
-          </select>
-        </label>
+      <label>direction
+        <select id="direction">
+          <option value="AUTO">AUTO</option>
+          <option value="LONG">LONG</option>
+          <option value="SHORT">SHORT</option>
+        </select>
+      </label>
 
-        <label>atrPeriod <input id="atrPeriod" type="number" step="1" /></label>
-        <label>atrMultiplier <input id="atrMultiplier" type="number" step="0.1" /></label>
+      <label>atrPeriod <input id="atrPeriod" type="number" step="1" /></label>
+      <label>atrMultiplier <input id="atrMultiplier" type="number" step="0.1" /></label>
 
-        <label>entryMode
-          <select id="entryMode">
-            <option value="BREAKOUT_RETEST">BREAKOUT_RETEST</option>
-            <option value="BREAKOUT_ONLY">BREAKOUT_ONLY</option>
-          </select>
-        </label>
+      <label>entryMode
+        <select id="entryMode">
+          <option value="BREAKOUT_RETEST">BREAKOUT_RETEST</option>
+          <option value="BREAKOUT_ONLY">BREAKOUT_ONLY</option>
+        </select>
+      </label>
 
-        <label>takeProfitRR <input id="takeProfitRR" type="number" step="0.1" /></label>
-        <label>stopLossATR <input id="stopLossATR" type="number" step="0.1" /></label>
-      </section>
+      <label>takeProfitRR <input id="takeProfitRR" type="number" step="0.1" /></label>
+      <label>stopLossATR <input id="stopLossATR" type="number" step="0.1" /></label>
+      <label>lotSize <input id="lotSize" type="number" step="1" min="1" /></label>
+      <label class="checkbox-label"><input id="autoExecute" type="checkbox" /> Auto Execute</label>
+    </section>
 
-      <section>
-        <button id="saveBtn" type="button">Save Config</button>
-        <button id="startBtn" type="button">Start</button>
-        <button id="stopBtn" type="button">Stop</button>
-        <button id="refreshBtn" type="button">Refresh</button>
-        <button id="exportBtn" type="button">Export CSV</button>
-      </section>
+    <section>
+      <button id="saveBtn" type="button">Save Config</button>
+      <button id="startBtn" type="button">Start</button>
+      <button id="stopBtn" type="button">Stop</button>
+      <button id="refreshBtn" type="button">Refresh</button>
+      <button id="exportBtn" type="button">Export CSV</button>
+      <button id="refreshBrokerBtn" type="button">Refresh Broker</button>
+    </section>
 
-      <section>
-        <pre id="logs"></pre>
-      </section>
-    </main>
+    <section>
+      <input id="inputVolume" placeholder="Volume" type="number" />
+      <input id="inputTp" placeholder="TP" type="number" />
+      <input id="inputSl" placeholder="SL" type="number" />
+      <button id="setSlBhBtn" type="button">Set TP/SL</button>
+    </section>
 
-    <script type="module" src="./popup.js"></script>
-  </body>
+    <section>
+      <div class="hud">
+        <div class="hud-row"><span>Trend Angle</span><strong id="angleDegDisplay">0</strong></div>
+        <div class="hud-row"><span>Anchor Index</span><strong id="anchorIndexDisplay">0</strong></div>
+        <div class="hud-row"><span>Anchor Price</span><strong id="anchorPriceDisplay">-</strong></div>
+        <div class="hud-row"><span>Zone Mode</span><strong id="engineModeDisplay">IDLE</strong></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="log" id="logs">Waiting...</div>
+    </section>
+  </main>
+
+  <script src="./popup.js"></script>
+</body>
 </html>

@@ -1,31 +1,92 @@
-body {
+/* src/popup/popup.css */
+:root {
+  --bg: #0b1220;
+  --panel: #0f1a2b;
+  --ink: #e8eef7;
+  --muted: #7c92a6;
+  --line: #1b2738;
+  --accent: #41a6f7;
+}
+* { box-sizing: border-box; }
+html, body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  width: 360px;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial;
+  min-width: 260px;
 }
 main {
-  padding: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 section {
-  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
 }
 label {
-  display: block;
-  margin-bottom: 6px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 12px ui-sans-serif, system-ui;
+  color: var(--muted);
 }
-input, select {
+input, select, button {
+  font: inherit;
+  color: inherit;
+  background: #0b1b2e;
+  border: 1px solid #243548;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+button { cursor: pointer; background: #0e2740; }
+button:hover { background: #12344f; }
+button.buy { color: #c9f0d6; background: #11331d; border-color: #184d2a; }
+button.sell { color: #fcd7d7; background: #3b1418; border-color: #5b1f23; }
+.log {
   width: 100%;
-  box-sizing: border-box;
-}
-button {
-  margin-right: 6px;
-  margin-bottom: 6px;
-}
-#logs {
-  max-height: 140px;
-  overflow: auto;
-  background: #f6f6f6;
+  background: #04070b;
+  color: #bcd8ff;
+  border: 1px solid #0c192b;
+  border-radius: 8px;
   padding: 8px;
+  min-height: 160px;
+  max-height: 360px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  box-sizing: border-box;
   white-space: pre-wrap;
+}
+.hud {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.hud-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #0b1b2e;
+  border: 1px solid #1c2e3f;
+  border-radius: 8px;
+}
+.hud-row span { color: var(--muted); }
+.hud-row strong { color: #d6e8ff; font-variant-numeric: tabular-nums; }
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
 }

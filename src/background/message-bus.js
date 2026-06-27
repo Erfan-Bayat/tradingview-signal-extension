@@ -2,59 +2,75 @@
 import { MessageType } from "../shared/enums.js";
 import { logger } from "../shared/logger.js";
 
-function lastError(context) {
-  if (chrome.runtime.lastError) {
-    logger.warn("message-bus", `${context}: ${chrome.runtime.lastError.message}`);
-    return true;
-  }
-  return false;
-}
-
-export function queryActiveTab() {
+export function sendToTab(tabId, message) {
   return new Promise((resolve) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (lastError("tabs.query(active)")) return resolve(null);
-      resolve(tabs?.[0] ?? null);
+    chrome.tabs.sendMessage(tabId, message, (response) => {
+      if (chrome.runtime.lastError) {
+        logger.warn("message-bus", `tabs.sendMessage failed: ${chrome.runtime.lastError.message}`);
+        resolve(null);
+        return;
+      }
+      resolve(response ?? null);
     });
   });
 }
 
-export function sendToTab(tabId, message) {
+export function sendToTabWithRetry(tabId, message, attempts = 2) {
   return new Promise((resolve) => {
-    chrome.tabs.sendMessage(tabId, message, (response) => {
-      if (lastError(`tabs.sendMessage(${message?.type})`)) return resolve(null);
-      resolve(response ?? null);
-    });
+    function attempt(retries) {
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        if (chrome.runtime.lastError) {
+          logger.warn("message-bus", `tabs.sendMessage failed (retries=${retries}): ${chrome.runtime.lastError.message}`);
+          if (retries <= 1) return resolve(null);
+          setTimeout(() => attempt(retries - 1), 500);
+          return;
+        }
+        resolve(response ?? null);
+      });
+    }
+    attempt(attempts);
   });
 }
 
 export function notifyPopup(type, payload = {}) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type, payload }, (response) => {
-      if (lastError(`runtime.sendMessage(${type})`)) return resolve(null);
+      if (chrome.runtime.lastError) {
+        logger.debug("message-bus", `notifyPopup suppressed: ${chrome.runtime.lastError.message}`);
+        return resolve(null);
+      }
       resolve(response ?? null);
     });
   });
 }
 
-export async function probeChartOnActiveTab() {
-  const tab = await queryActiveTab();
-  if (!tab?.id) return { ok: false, error: "NO_ACTIVE_TAB" };
-  const res = await sendToTab(tab.id, { type: MessageType.PROBE_CHART });
-  return { ok: true, tabId: tab.id, response: res };
+export function queryActiveTab() {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (chrome.runtime.lastError) {
+        logger.warn("message-bus", `queryActiveTab failed: ${chrome.runtime.lastError.message}`);
+        return resolve(null);
+      }
+      resolve(tabs?.[0] ?? null);
+    });
+  });
 }
 
-export async function requestContextOnTab(tabId) {
-  const res = await sendToTab(tabId, { type: MessageType.REQUEST_CONTEXT });
-  return res;
+export function requestContextOnTab(tabId) {
+  return sendToTab(tabId, { type: MessageType.REQUEST_CONTEXT });
 }
 
-export async function startStreamOnTab(tabId) {
-  const res = await sendToTab(tabId, { type: MessageType.START_STREAM });
-  return res;
+export function startStreamOnTab(tabId) {
+  return sendToTab(tabId, { type: MessageType.START_STREAM });
 }
 
-export async function stopStreamOnTab(tabId) {
-  const res = await sendToTab(tabId, { type: MessageType.STOP_STREAM });
-  return res;
+export function stopStreamOnTab(tabId) {
+  return sendToTab(tabId, { type: MessageType.STOP_STREAM });
+}
+
+export function probeChartOnActiveTab() {
+  return queryActiveTab().then((tab) => {
+    if (!tab?.id) return { ok: false, error: "NO_ACTIVE_TAB" };
+    return sendToTabWithRetry(tab.id, { type: MessageType.PROBE_CHART }).then((res) => ({ ok: true, tabId: tab.id, response: res }));
+  });
 }
