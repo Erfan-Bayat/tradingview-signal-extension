@@ -58,6 +58,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const type = message?.type;
+  logger.info("service-worker", `Received message: ${type} from tab=${sender?.tab?.id ?? "?"}`);
 
   if (!isValidMessageType(type)) {
     safeSend(sendResponse, { ok: false, error: "UNKNOWN_MESSAGE_TYPE" });

@@ -60,9 +60,10 @@ export function createHivaexStreams({ adapter }) {
   }
 
   function openStreams() {
-    if (!savedCtx) return;
+    if (!savedCtx) { logger.warn("hivaex-stream", "openStreams: no savedCtx"); return; }
     restartScheduled = false;
     const ctx = savedCtx;
+    logger.info("hivaex-stream", "Opening WebSocket streams");
 
     const urlPrice = "wss://hivaex.ir/ounce/ws/ounce/price/";
     priceWs = createWs(urlPrice, "price", (raw) => {
@@ -93,20 +94,22 @@ export function createHivaexStreams({ adapter }) {
   }
 
   function createWs(url, label, onMessage) {
+    logger.info("hivaex-stream", `Creating WebSocket: ${label} → ${url}`);
     const ws = new WebSocket(url);
     ws.onerror = (event) => {
       logger.warn("hivaex-stream", `WebSocket ${label} error`, event?.type ?? event);
       try { ws.close(); } catch {}
     };
     ws.onclose = (event) => {
-      logger.warn("hivaex-stream", `WebSocket ${label} closed`, event?.code, event?.reason);
+      logger.warn("hivaex-stream", `WebSocket ${label} closed code=${event?.code}`);
       if (label === "price") priceWs = null;
       if (label === "candle") candleWs = null;
       scheduleReconnect(3000);
     };
     ws.onopen = () => {
-      const payload = { action: "SubAdd", subs: [label === "price" ? "0~hivaex~ounce~gold" : "0~hivaex~ounce~1m"] };
-      try { ws.send(JSON.stringify(payload)); } catch {}
+      const sub = label === "price" ? "0~hivaex~ounce~gold" : "0~hivaex~ounce~1m";
+      logger.info("hivaex-stream", `WebSocket ${label} OPEN, subscribing: ${sub}`);
+      try { ws.send(JSON.stringify({ action: "SubAdd", subs: [sub] })); } catch {}
     };
     ws.onmessage = (event) => {
       if (typeof event.data === "string") onMessage(event.data);

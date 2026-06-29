@@ -78,15 +78,17 @@ function initBroker() {
 }
 
 function startStream() {
-  if (streamActive) return;
+  if (streamActive) { logger.info("content-entry", "startStream: already active"); return; }
   streamActive = true;
   const adapter = ensureAdapter();
+  logger.info("content-entry", `startStream: adapter=${adapter?.constructor?.id}`);
   publishContext(true);
 
   if (adapter?.id === "hivaex") {
     const hivaex = createHivaexStreams({ adapter });
     hivaex.start({
       onPrice(price) {
+        logger.debug("content-entry", `onPrice: ${price}`);
         const ctx = publishContext(false);
         sendToBackground({ type: MessageType.PRICE_UPDATE, payload: { price, symbol: ctx.symbol, timeframe: ctx.timeframe, adapterId: adapter.id, ts: Date.now() } });
       },
