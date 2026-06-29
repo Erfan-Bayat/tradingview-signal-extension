@@ -15,14 +15,38 @@ export function sendToTab(tabId, message) {
   });
 }
 
+async function ensureContentScript(tabId) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab?.url) return false;
+    const host = new URL(tab.url).hostname;
+    if (host !== "hivaex.ir" && !host.endsWith(".hivaex.ir")) return false;
+
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["dist/content/content-entry.js"]
+    });
+    return Boolean(result);
+  } catch (err) {
+    logger.debug("message-bus", "ensureContentScript failed", err?.message);
+    return false;
+  }
+}
+
 export function sendToTabWithRetry(tabId, message, attempts = 2) {
   return new Promise((resolve) => {
+    let injected = false;
     function attempt(retries) {
       chrome.tabs.sendMessage(tabId, message, (response) => {
         if (chrome.runtime.lastError) {
           logger.warn("message-bus", `tabs.sendMessage failed (retries=${retries}): ${chrome.runtime.lastError.message}`);
           if (retries <= 1) return resolve(null);
-          setTimeout(() => attempt(retries - 1), 500);
+          if (!injected) {
+            injected = true;
+            ensureContentScript(tabId).then(() => setTimeout(() => attempt(retries - 1), 500));
+          } else {
+            setTimeout(() => attempt(retries - 1), 500);
+          }
           return;
         }
         resolve(response ?? null);
@@ -57,15 +81,15 @@ export function queryActiveTab() {
 }
 
 export function requestContextOnTab(tabId) {
-  return sendToTab(tabId, { type: MessageType.REQUEST_CONTEXT });
+  return sendToTabWithRetry(tabId, { type: MessageType.REQUEST_CONTEXT });
 }
 
 export function startStreamOnTab(tabId) {
-  return sendToTab(tabId, { type: MessageType.START_STREAM });
+  return sendToTabWithRetry(tabId, { type: MessageType.START_STREAM });
 }
 
 export function stopStreamOnTab(tabId) {
-  return sendToTab(tabId, { type: MessageType.STOP_STREAM });
+  return sendToTabWithRetry(tabId, { type: MessageType.STOP_STREAM });
 }
 
 export function probeChartOnActiveTab() {
