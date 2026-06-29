@@ -21,7 +21,8 @@ import {
   requestContextOnTab,
   startStreamOnTab,
   stopStreamOnTab,
-  probeChartOnActiveTab
+  probeChartOnActiveTab,
+  ensureContentScript
 } from "./message-bus.js";
 
 const MIN_PRICE_INTERVAL_MS = 500;
@@ -88,19 +89,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       }
       case MessageType.START_MONITORING: {
-        const probe = await probeChartOnActiveTab();
-        if (!probe.ok || !probe.tabId) {
-          safeSend(sendResponse, { ok: false, error: probe.error ?? "PROBE_FAILED" });
+        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        if (!tab?.id) {
+          safeSend(sendResponse, { ok: false, error: "NO_ACTIVE_TAB" });
           break;
         }
-        await requestContextOnTab(probe.tabId);
-        await startStreamOnTab(probe.tabId);
+
+        await ensureContentScript(tab.id);
+        await requestContextOnTab(tab.id);
+        await startStreamOnTab(tab.id);
 
         const session = await getSessionState();
         const next = {
           ...session,
           monitoring: true,
-          tabId: probe.tabId,
+          tabId: tab.id,
           engineState: EngineState.IDLE,
           updatedAt: Date.now()
         };

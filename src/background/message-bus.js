@@ -15,7 +15,7 @@ export function sendToTab(tabId, message) {
   });
 }
 
-async function ensureContentScript(tabId) {
+export async function ensureContentScript(tabId) {
   try {
     const tab = await chrome.tabs.get(tabId);
     if (!tab?.url) return false;
